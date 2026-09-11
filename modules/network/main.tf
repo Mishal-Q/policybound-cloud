@@ -27,7 +27,7 @@ resource "aws_subnet" "public" {
   for_each                = var.public_subnet_cidrs
   vpc_id                  = aws_vpc.this.id
   availability_zone       = each.key
-  cidr_block               = each.value
+  cidr_block              = each.value
   map_public_ip_on_launch = true
   tags                    = merge(var.tags, { Name = "${var.name_prefix}-public-${each.key}", Tier = "public", ManagedBy = "sentinel-iac" })
 }
@@ -141,7 +141,7 @@ resource "aws_security_group_rule" "app_ingress_from_alb" {
   from_port                = 8080
   to_port                  = 8080
   protocol                 = "tcp"
-  description               = "App port reachable only from the ALB SG, never by CIDR"
+  description              = "App port reachable only from the ALB SG, never by CIDR"
 }
 
 resource "aws_security_group" "db" {
@@ -157,5 +157,5 @@ resource "aws_security_group_rule" "db_ingress_from_app" {
   from_port                = 5432
   to_port                  = 5432
   protocol                 = "tcp"
-  description               = "Postgres reachable only from the app tier SG"
+  description              = "Postgres reachable only from the app tier SG"
 }

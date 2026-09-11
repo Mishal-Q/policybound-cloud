@@ -51,7 +51,7 @@ resource "aws_launch_template" "app" {
   tag_specifications {
     resource_type = "instance"
     tags = merge(var.tags, {
-      ManagedBy = "sentinel-iac"
+      ManagedBy   = "sentinel-iac"
       environment = var.environment
     })
   }

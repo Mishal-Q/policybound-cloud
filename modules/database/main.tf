@@ -31,7 +31,7 @@ resource "aws_db_instance" "this" {
   storage_encrypted = true
   kms_key_id        = aws_kms_key.db.arn
 
-  db_subnet_group_name  = aws_db_subnet_group.this.name
+  db_subnet_group_name   = aws_db_subnet_group.this.name
   vpc_security_group_ids = [var.db_security_group_id]
 
   # Hardcoded, not a variable: publicly_accessible is a policy-enforced
@@ -46,10 +46,10 @@ resource "aws_db_instance" "this" {
   password = var.master_password # sourced from a Secrets Manager-backed variable, never committed
 
   tags = merge(var.tags, {
-    ManagedBy = "sentinel-iac"
-    owner            = var.owner_tag
-    environment      = var.environment
-    "cost-center"    = var.cost_center_tag
+    ManagedBy             = "sentinel-iac"
+    owner                 = var.owner_tag
+    environment           = var.environment
+    "cost-center"         = var.cost_center_tag
     "data-classification" = "confidential"
   })
 }
