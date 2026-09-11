@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars and fill in real values. Never commit terraform.tfvars.
+account_id             = "111111111111"
+trusted_account_arn    = "arn:aws:iam::111111111111:root"
+app_secret_arn         = "arn:aws:secretsmanager:us-east-1:111111111111:secret:app-secret"
+github_token_secret_arn = "arn:aws:secretsmanager:us-east-1:111111111111:secret:sentinel-iac-github-token"
+db_master_username     = "sentinel_admin"
+db_master_password     = "CHANGE_ME_use_secrets_manager_in_real_use"
+ami_id                 = "ami-0000000000000000"
+acm_certificate_arn    = "arn:aws:acm:us-east-1:111111111111:certificate/replace-me"

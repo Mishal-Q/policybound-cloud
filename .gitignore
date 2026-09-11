@@ -1,0 +1,43 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+plan.tfplan
+plan.json
+
+# Never commit these regardless of the tfvars.example naming convention
+terraform.tfvars
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# CI artifacts generated locally while testing
+checkov-results.json
+opa-results.json
+infracost.json
+normalized.json
+
+# OS/editor noise
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Lambda build output
+drift/detector/build/
+
+# Local tool binaries (fetched, not committed)
+.tools/

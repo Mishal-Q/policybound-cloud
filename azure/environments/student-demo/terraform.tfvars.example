@@ -1,0 +1,30 @@
+# Copy to terraform.tfvars and fill in real values. Never commit
+# terraform.tfvars. These are placeholders -- none of them have been
+# validated against a real Azure tenant.
+location                            = "eastus"
+tenant_id                           = "00000000-0000-0000-0000-000000000000"
+operator_principal_id               = "00000000-0000-0000-0000-000000000000"
+storage_account_name                = "sentineliacdemo123"
+
+# key_vault_name MUST be globally unique across ALL Azure tenants, not
+# just your subscription -- Key Vault names share one global DNS-like
+# namespace, the same way S3 bucket names do on AWS. The placeholder
+# below is NOT safe to use as-is: if you (or anyone else who has ever
+# copied this example file) deploys with this exact value, one of you
+# will get a "name already taken" error from Azure. Replace it with
+# something you're confident is unique, e.g. your own name/initials
+# plus a few random digits: "jsmith-sentinel-demo-482". Must be 3-24
+# characters, start with a letter, contain only letters/digits/hyphens,
+# no consecutive hyphens, and not end with a hyphen (enforced locally
+# by this environment's variable validation; global uniqueness is not,
+# since that requires a real Azure API call).
+key_vault_name                      = "CHANGE-ME-globally-unique-kv"
+
+# Defaults to false in variables.tf already (disposable demo, needs
+# clean destroy/recreate) -- only listed here for visibility. Leave
+# this as false unless you have a specific reason to test
+# production-like purge-protection behavior in this demo environment.
+key_vault_purge_protection_enabled  = false
+
+owner_tag                           = "student-demo"
+cost_center_tag                     = "learning"

@@ -1,0 +1,9 @@
+# Requirements for the CI helper scripts (normalize_plan_for_ci.py,
+# fail_on_deny.py, cost_gate.py) and remediation/exceptions.py, which
+# cost_gate.py imports directly. Kept separate from
+# drift/detector/requirements.txt because the Lambda package only needs
+# boto3 -- it never parses exceptions.yaml itself, that's done ahead of
+# time by whatever writes exceptions into the Lambda's runtime data
+# (see drift/detector/handler.py's lookup_exception stub, which is
+# wired to a real source separately from this CI-side loader).
+pyyaml>=6.0

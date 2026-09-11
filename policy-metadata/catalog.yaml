@@ -1,0 +1,237 @@
+# Control catalog. Every Rego policy has a matching entry here.
+# A "Control" is the unit of governance: it names a policy, its evidence
+# source(s), which lifecycle phase(s) it runs in, its remediation mode,
+# and whether/how it can be excepted. Rego files enforce the logic;
+# this file is what lets docs, CI output, and the audit ledger all refer
+# to the same identity (policy_id + version) instead of a bare filename.
+
+- control_id: CTRL-NET-DB-001
+  policy_id: NET-DB-001
+  version: "1.0"
+  severity: critical
+  title: Database must not be publicly accessible
+  scope:
+    resource_type: db_instance
+  evidence:
+    desired: terraform_plan
+    observed: aws_config
+  evaluation_phases: [pre_deployment, runtime]
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: true
+    max_duration_days: 30
+
+- control_id: CTRL-NET-DB-002
+  policy_id: NET-DB-002
+  version: "1.0"
+  severity: critical
+  title: Database subnet must not have a default route to an Internet Gateway
+  scope:
+    resource_type: route_table
+  evidence:
+    desired: terraform_plan_static_config   # traverses configuration.root_module, not resource_changes
+    observed: aws_config
+  evaluation_phases: [pre_deployment, runtime]
+  notes: >
+    Cross-resource graph invariant. Scoped to already-existing subnets/route
+    tables where associations are statically determinable, because newly
+    created infrastructure has (known after apply) values in resource_changes
+    that make the association graph unresolvable at plan time.
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: false
+
+- control_id: CTRL-IAM-BOUNDARY-001
+  policy_id: IAM-BOUNDARY-001
+  version: "1.0"
+  severity: high
+  title: Non-administrative IAM roles must reference the approved permission boundary
+  scope:
+    resource_type: iam_role
+  evidence:
+    desired: terraform_plan
+    observed: aws_config
+  evaluation_phases: [pre_deployment, runtime]
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: true
+    max_duration_days: 14
+    condition: "privilege_tag == admin"
+
+- control_id: CTRL-DATA-ENC-001
+  policy_id: DATA-ENC-001
+  version: "1.0"
+  severity: critical
+  title: Persistent storage (RDS, S3) must use customer-managed KMS encryption
+  scope:
+    resource_type: [db_instance, s3_bucket]
+  evidence:
+    desired: terraform_plan
+    observed: aws_config
+  evaluation_phases: [pre_deployment, runtime]
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: false
+
+- control_id: CTRL-COST-001
+  policy_id: COST-001
+  version: "1.0"
+  severity: medium
+  title: PR-introduced monthly cost delta must not exceed 25%
+  scope:
+    resource_type: pull_request
+  evidence:
+    desired: infracost_json
+  evaluation_phases: [pre_deployment]
+  remediation:
+    mode: block_merge
+  exception:
+    allowed: true
+    max_duration_days: 7
+
+- control_id: CTRL-GOV-REGION-001
+  policy_id: GOV-REGION-001
+  version: "1.0"
+  severity: medium
+  title: Resources must be deployed only in approved regions
+  scope:
+    resource_type: any
+    notes: >
+      Deliberately not scoped to a specific resource_type -- reads
+      attributes.region generically off any canonical resource, AWS or
+      Azure, which is what makes this genuinely cross-cloud-portable
+      rather than merely cross-cloud-similar.
+  evidence:
+    desired: terraform_plan
+    observed: aws_config
+  evaluation_phases: [pre_deployment, runtime]
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: false
+    notes: "Region restriction is a compliance/data-residency boundary, not a tunable preference."
+
+- control_id: CTRL-GOV-TAG-001
+  policy_id: GOV-TAG-001
+  version: "1.0"
+  severity: medium
+  title: Governed resources must carry required metadata tags
+  scope:
+    resource_type: any
+    notes: >
+      Base tag set (ManagedBy, owner, cost-center) applies to any
+      resource type. data-classification applies only to db_instance
+      and s3_bucket, audited against actual repository tagging
+      convention rather than invented -- see the comment in
+      policies/governance/gov_tag_001.rego.
+  evidence:
+    desired: terraform_plan
+    observed: aws_config
+  evaluation_phases: [pre_deployment, runtime]
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: true
+    max_duration_days: 14
+    notes: "For legitimate short-lived untagged resources during migration only."
+
+# --- Azure controls below.
+# Azure policy tests and Terraform configuration have been validated locally.
+# REAL_AZURE_VALIDATION remains unverified until the student-demo environment
+# is deployed and the controls are exercised against observed Azure resources.
+# "Implemented" below therefore refers to the policy/control implementation,
+# not proof of successful live-cloud deployment.
+- control_id: CTRL-AZURE-PUBLIC-001
+  policy_id: AZURE-PUBLIC-001
+  version: "1.0"
+  severity: critical
+  title: Azure Storage Account must not allow public network access
+  scope:
+    resource_type: azure_storage_account
+  evidence:
+    desired: azure_terraform_plan
+    observed: azure_resource_graph
+  evaluation_phases: [pre_deployment]
+  real_azure_validation: unverified
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: false
+
+- control_id: CTRL-AZURE-NET-001
+  policy_id: AZURE-NET-001
+  version: "1.0"
+  severity: critical
+  title: Data-tier NSG must not allow inbound internet access
+  scope:
+    resource_type: azure_network_security_group
+  evidence:
+    desired: azure_terraform_plan
+    observed: azure_resource_graph
+  evaluation_phases: [pre_deployment]
+  real_azure_validation: unverified
+  notes: >
+    Structurally the inverse of NET-DB-002: AWS requires an explicit
+    opt-in route to reach the internet, so NET-DB-002 checks for the
+    PRESENCE of a forbidden route. Azure's default posture is
+    implicit-allow-unless-blocked, so this rule instead checks for the
+    ABSENCE of an NSG rule that would be required to block inbound
+    internet traffic to the data tier. Not a port of NET-DB-002 -- a
+    separate rule with inverted logic, because the underlying platform
+    default is inverted.
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: false
+
+- control_id: CTRL-AZURE-IDENTITY-001
+  policy_id: AZURE-IDENTITY-001
+  version: "1.0"
+  severity: high
+  title: RBAC role assignment scope must not exceed the resource group
+  scope:
+    resource_type: azure_role_assignment
+  evidence:
+    desired: azure_terraform_plan
+    observed: azure_resource_graph
+  evaluation_phases: [pre_deployment]
+  real_azure_validation: unverified
+  notes: >
+    Same governance INTENT as IAM-BOUNDARY-001 (cap privileged access),
+    different MECHANISM entirely. Azure has no permission-boundary
+    concept. This checks role assignment scope (subscription vs.
+    resource-group vs. resource) instead of a boundary-policy
+    intersection. Do not read this as "the Azure version of
+    IAM-BOUNDARY-001" -- it's a separate control addressing the same
+    intent by the only mechanism Azure actually offers.
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: true
+    max_duration_days: 7
+
+- control_id: CTRL-AZURE-DATA-ENC-001
+  policy_id: AZURE-DATA-ENC-001
+  version: "1.0"
+  severity: critical
+  title: Azure Storage Account must use a customer-managed encryption key
+  scope:
+    resource_type: azure_storage_account
+  evidence:
+    desired: azure_terraform_plan
+    observed: azure_resource_graph
+  evaluation_phases: [pre_deployment]
+  real_azure_validation: unverified
+  notes: >
+    Uses the cloud-neutral `encryption_key_ref` field (see
+    docs/decisions/0009-encryption-key-ref-semantic-field.md), not
+    kms_key_arn, since Azure has no KMS. DATA-ENC-001 (AWS) is untouched
+    by this addition.
+  remediation:
+    mode: human_approved_pr
+  exception:
+    allowed: false

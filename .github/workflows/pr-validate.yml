@@ -1,0 +1,110 @@
+name: pr-validate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: environments/dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.1"
+
+      - name: terraform fmt check
+        run: terraform fmt -check -recursive ../../
+
+      - name: terraform init
+        run: terraform init -backend=false
+
+      - name: terraform validate
+        run: terraform validate
+
+      - name: Set up OPA
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: "0.68.0"
+
+      - name: OPA unit tests (AWS policy fixtures)
+        run: opa test ../../policies/ -v
+
+      - name: Python drift-engine tests
+        run: |
+          python3 -m pip install --quiet pytest -r ../../drift/detector/requirements.txt -r ../../scripts/requirements.txt
+          cd ../..
+          python3 -m pytest drift/tests -v
+
+  azure-validate:
+    # Separate job, deliberately -- this validates the Azure layer
+    # independently of the AWS job above, and does NOT deploy or plan
+    # against a real Azure subscription. No azure/arm-deploy action, no
+    # AZURE_CREDENTIALS secret, nothing that authenticates to Azure at
+    # all is used anywhere in this job.
+    #
+    # Two genuinely different categories of step below, labeled
+    # explicitly rather than left ambiguous (see docs/limitations.md and
+    # the "what was actually executed" table in
+    # docs/cross-cloud-governance-model.md for why this distinction
+    # matters): CREDENTIAL-FREE steps need no secrets of any kind.
+    # NETWORK-REQUIRED-BUT-CREDENTIAL-FREE steps need outbound internet
+    # access (to fetch the azurerm provider plugin from the Terraform
+    # registry) but still authenticate to nothing -- terraform validate
+    # checks HCL syntax and provider schema conformance, it does not
+    # require an active Azure login. These checks are designed to remain
+    # credential-free and reproducible in CI.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: azure
+    steps:
+      - uses: actions/checkout@v4
+
+      # CREDENTIAL-FREE: policy tests need no cloud access of any kind.
+      - name: Set up OPA
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: "0.68.0"
+
+      - name: OPA unit tests (Azure policy fixtures)
+        run: opa test policies/ -v
+
+      # CREDENTIAL-FREE: normalizer tests operate on synthetic fixtures,
+      # not real Azure data.
+      - name: Azure normalizer unit tests
+        run: |
+          pip install pytest --quiet
+          cd detector && python3 -m pytest -v
+
+      # NETWORK-REQUIRED, CREDENTIAL-FREE: fetches the azurerm provider
+      # plugin from registry.terraform.io, but does not authenticate to
+      # any Azure subscription. If this step fails because network
+      # access to the registry isn't available in a given CI runner,
+      # that is a network configuration issue, not a missing-secret
+      # issue -- don't add an AZURE_CREDENTIALS secret to fix it.
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.1"
+
+      - name: terraform fmt check (Azure modules + environment)
+        run: terraform fmt -check -recursive .
+
+      - name: terraform init (no backend, no Azure auth)
+        working-directory: azure/environments/student-demo
+        run: terraform init -backend=false
+
+      - name: terraform validate (Azure student-demo environment)
+        working-directory: azure/environments/student-demo
+        run: terraform validate
+
+      # Deliberately NOT included in this job: terraform plan, terraform
+      # apply, or anything using azure/login. Real Azure validation is
+      # tracked separately -- see azure/README.md's "what would actually
+      # be needed" list. This job proves the Azure Terraform is
+      # syntactically valid and schema-conformant; it does not and
+      # cannot prove it would successfully deploy.

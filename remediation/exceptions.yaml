@@ -1,0 +1,34 @@
+# Exceptions are approved by security (or finance, for COST-001 only),
+# time-boxed, and tied to a specific PR number so there's a paper trail
+# for why the exception exists. See runbooks/policy-exception-process.md
+# for how someone actually requests one of these.
+#
+# NET-DB-002 and DATA-ENC-001 never get an exception, no matter what's
+# written here -- remediation/exceptions.py hardcodes approver_authorized
+# = false for both. A route table with a default route to an internet
+# gateway serving a database subnet, or an unencrypted database, isn't a
+# "temporary, approved deviation" kind of problem.
+
+exceptions:
+  - id: EXC-2026-001
+    resource_urn: "aws:us-east-1:111111111111:s3_bucket/quarterly-data-export"
+    policy_id: COST-001
+    reason: "One-time data export job needs a temporarily larger instance class for the transform step"
+    status: approved
+    expires_at: "2026-10-15T23:59:59Z"
+    approved_pr_number: 184
+    approver_team: finance
+
+  # Left in deliberately as a worked example of an exception that no
+  # longer covers anything -- expires_at is in the past relative to
+  # "now" in this repo. classify() falls back to SECURITY_CRITICAL /
+  # POLICY_VIOLATING for the underlying violation once this expires,
+  # it does not silently keep authorizing it.
+  - id: EXC-2026-002
+    resource_urn: "aws:us-east-1:111111111111:iam_role/legacy-migration-role"
+    policy_id: IAM-BOUNDARY-001
+    reason: "Legacy migration role predates the boundary policy, scheduled for decommission"
+    status: approved
+    expires_at: "2026-08-01T00:00:00Z"
+    approved_pr_number: 142
+    approver_team: security
