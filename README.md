@@ -42,6 +42,53 @@ That gives a current automated test baseline of 85 passing Python and OPA tests.
 
 The GitHub Actions workflow is credential-free for validation. It does not require an AWS account or Azure login to run Terraform validation, OPA tests, or Python tests.
 
+## Quick start
+
+The repository can be validated without AWS or Azure credentials.
+
+Create a virtual environment and install the Python dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r drift/detector/requirements.txt
+python -m pip install -r scripts/requirements.txt
+python -m pip install pytest
+```
+
+Run the Python tests:
+
+```bash
+python -m pytest -q
+```
+
+Expected result: `37 passed`.
+
+Validate the Terraform configurations:
+
+```bash
+terraform -chdir=environments/dev init -backend=false -input=false
+terraform -chdir=environments/dev validate
+
+terraform -chdir=drift/terraform init -backend=false -input=false
+terraform -chdir=drift/terraform validate
+
+terraform -chdir=azure/environments/student-demo init -backend=false -input=false
+terraform -chdir=azure/environments/student-demo validate
+
+terraform fmt -check -recursive
+```
+
+The policy tests use pre-Rego-v1 syntax and are currently verified with OPA 0.68.0. OPA 1.x requires a Rego syntax migration before running this policy set directly.
+
+With OPA 0.68.0 installed:
+
+```bash
+opa test policies azure/policies -v
+```
+
+Expected result: `PASS: 48/48`.
+
 ## Cloud execution status
 
 The AWS implementation is used as the broader infrastructure and governance model, but a real AWS deployment is not required to reproduce the project tests.
