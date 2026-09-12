@@ -1,46 +1,36 @@
 # Sentinel-IaC
 
-A policy-governed, drift-aware control plane for AWS infrastructure.
-Terraform defines what the infrastructure *should* look like. AWS Config
-and CloudTrail observe what it *actually* looks like. A normalizer turns
-both into the same canonical shape, a diff engine compares them, and OPA
-policies re-evaluated against that same canonical shape decide whether
-any divergence is benign, authorized, a policy violation, or security
-critical. Nothing gets auto-remediated -- the system proposes a fix as a
-pull request, a person merges it.
+Sentinel-IaC is a policy-as-code and drift-detection project for cloud infrastructure.
+
+Terraform represents the intended state of the infrastructure. Cloud observations are normalized into the same canonical format, compared with the intended state, and checked against OPA policies. The goal is to make the same governance rules usable against both planned infrastructure and observed cloud state.
+
+The project started with an AWS-focused design and was later extended with an Azure `student-demo` environment so that part of the workflow could be tested against a real cloud deployment.
+
+## Architecture
+
+![Sentinel-IaC architecture](docs/images/architecture_diagram.png)
+
 
 ## Why this exists
 
-The starting question was: Terraform guarantees what you *intended* to
-deploy. It says nothing about whether the infrastructure stays that way
-after someone -- or something -- changes a security group in the console
-six weeks later. Checkov and most CSPM tools check a Terraform plan or a
-point-in-time snapshot; they don't continuously re-check the same
-organizational rules against both the desired and the observed state
-using one shared definition of "compliant."
+Infrastructure can change after the original Terraform deployment. A security rule can be changed manually, a resource can drift from its intended configuration, or the observed cloud state can differ from what the repository says should exist.
 
-That's the actual thing this project builds: one set of policies,
-written once, evaluated identically whether the input is a Terraform
-plan in CI or a live AWS Config snapshot at 3am. See
-`docs/decisions/0007-normalized-canonical-schema.md` for why that's
-harder than it sounds and what it took to get there.
+This project explores a simple question: can desired state and observed state be converted into one common representation and checked using the same policy rules?
 
-## Current project status
+The implementation uses a canonical state model, a diff engine, OPA policies, and human-reviewed remediation rather than automatically changing infrastructure.
 
-The repository now has a reproducible local validation baseline across the AWS-oriented and Azure layers.
+The reasoning behind the canonical schema is documented in `docs/decisions/0007-normalized-canonical-schema.md`.
 
-Verified locally:
+## Verification
 
-- Terraform formatting, initialization, and validation for `environments/dev`
-- Terraform formatting, initialization, and validation for `drift/terraform`
-- Terraform formatting, initialization, and validation for `azure/environments/student-demo`
-- 28 drift-engine Python tests passing
-- 9 Azure detector tests passing
-- 48 OPA policy tests passing with OPA 0.68.0
+The current repository has been validated with:
 
-That gives a current automated test baseline of 85 passing Python and OPA tests.
+- **Python:** 37/37 tests passing
+- **OPA:** 48/48 policy tests passing with OPA 0.68.0
+- **Terraform:** all 3 Terraform configurations initialize and validate successfully
+- **Azure:** the `student-demo` environment was deployed and tested on a real Azure subscription, then destroyed
 
-The GitHub Actions workflow is credential-free for validation. It does not require an AWS account or Azure login to run Terraform validation, OPA tests, or Python tests.
+The GitHub Actions validation workflow does not require AWS or Azure credentials.
 
 ## Quick start
 
