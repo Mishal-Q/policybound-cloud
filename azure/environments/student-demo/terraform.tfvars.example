@@ -20,11 +20,9 @@ storage_account_name                = "sentineliacdemo123"
 # since that requires a real Azure API call).
 key_vault_name                      = "CHANGE-ME-globally-unique-kv"
 
-# Defaults to false in variables.tf already (disposable demo, needs
-# clean destroy/recreate) -- only listed here for visibility. Leave
-# this as false unless you have a specific reason to test
-# production-like purge-protection behavior in this demo environment.
-key_vault_purge_protection_enabled  = false
+# Required for the Storage Account customer-managed key configuration.
+# A deleted vault may remain soft-deleted until the retention period expires.
+key_vault_purge_protection_enabled  = true
 
 owner_tag                           = "student-demo"
 cost_center_tag                     = "learning"

@@ -26,8 +26,8 @@ variable "key_vault_name" {
 
 variable "key_vault_purge_protection_enabled" {
   type        = bool
-  default     = false
-  description = "Defaults to false for this disposable student-demo environment specifically so it can be destroyed and recreated cleanly (see modules/identity/main.tf's comment on azurerm_key_vault.this for the full explanation of why purge protection and the demo's cleanup behavior conflict if this is true). A production environment reusing modules/identity should normally pass true here instead -- this default is scoped to student-demo, not a claim about what production should do."
+  default     = true
+  description = "Enables Key Vault purge protection. Azure Storage customer-managed keys require the backing Key Vault to have both soft delete and purge protection enabled."
 }
 
 variable "storage_account_name" {

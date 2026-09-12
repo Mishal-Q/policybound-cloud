@@ -67,13 +67,13 @@ also the most obvious places to extend the project.
 
 ## Azure layer
 
-- **Live Azure behavior is not yet verified.** The Azure Terraform configuration passes local formatting, initialization, and `terraform validate`, and the Azure policy and normalizer tests pass locally. No resources have yet been deployed to an Azure subscription, so successful apply and live-cloud behavior remain unverified.
+- **Live Azure behavior has now been verified for the student-demo path.** The environment was deployed to a real Azure subscription and then destroyed. The live run verified the Storage Account security settings, data-tier NSG rule, resource tags, resource-group-scoped RBAC assignment, Resource Graph observation and normalization, and OPA evaluation against the observed canonical state. The environment was not left running after validation.
 
-- **The Key Vault CMK dependency was corrected before live deployment.** The storage-account customer-managed-key association was moved out of the reusable data module and into the environment so it can be sequenced after the required Key Vault access policy. The resulting configuration passes local Terraform validation, but the dependency order still needs confirmation during the live Azure run.
+- **The Key Vault CMK dependency was verified during the live Azure run.** The storage-account customer-managed-key association was sequenced after the required Key Vault access policy, and the deployment completed successfully. The live run also showed that customer-managed-key use requires Key Vault purge protection in this configuration.
 
-- **Two additional Azure Terraform issues were corrected during review.** The Terraform identity was given the Key Vault key-management permissions required for CMK lifecycle operations, and the Storage diagnostic setting was moved to the appropriate Blob service sub-resource. Both changes pass local Terraform validation but have not yet been exercised against Azure APIs.
+- **Azure-specific Terraform behavior was exercised against Azure APIs.** The live run exposed Storage provider authentication behavior and the Key Vault purge-protection requirement. The Storage diagnostic setting configuration also deployed successfully. These findings are now reflected in the Azure environment configuration and live-validation record.
 
-- **The Azure normalizer has not yet been tested against observed live Azure output.** Its field mappings are covered by unit tests, but the exact Resource Graph/resource-response shapes used during the real-cloud experiment still need to be captured and checked against the normalizer.
+- **The Azure normalizer has now been tested against observed live Azure Resource Graph output.** The live run exposed a field-shape mismatch in the Storage Account encryption data: Azure returned `keyvaultproperties.currentVersionedKeyIdentifier`, which differed from the original fixture assumption. The normalizer was corrected to use the observed field, the fixture was updated, and the Azure normalizer tests pass. The Terraform-plan/desired-state normalization path remains fixture-based.
 
 - **`AZURE-IDENTITY-001` preserves the governance intent of `IAM-BOUNDARY-001`, not the AWS mechanism.** Azure RBAC scoping and AWS permission boundaries are different controls. ADR 0011 documents this distinction.
 

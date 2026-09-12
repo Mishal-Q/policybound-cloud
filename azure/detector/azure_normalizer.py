@@ -16,17 +16,15 @@ so `CanonicalResource`, `ATTRIBUTE_CONTRACTS`, and `missing_required_fields`
 are the single shared definition, not an Azure-side copy that could
 drift out of sync with the AWS-side one.
 
-HONESTY NOTE: the exact JSON shape `terraform show -json` produces for
-azurerm resources, and the exact shape Azure Resource Graph query
-results take, have NOT been verified against a real `terraform` binary
-or a real Azure subscription -- neither was available while building
-this. The field names below (`public_network_access_enabled`,
-`network_rule_set`, etc.) are the real azurerm provider argument names
-as documented, but the exact plan-JSON nesting is modeled on the same
-pattern the AWS extractors use, not confirmed against real Azure output.
-This is the Azure-side equivalent of the AWS normalizer fixture gap
-already documented in tests/fixtures/README.md -- flagged here rather
-than silently assumed correct.
+NOTE: the observed-state path has now been tested against real Azure
+Resource Graph output from the student demo. That run exposed the actual
+Storage encryption field casing, so the observed extractor uses
+`keyvaultproperties.currentVersionedKeyIdentifier`.
+
+The desired-state Terraform plan path is still fixture-based. Its exact
+`terraform show -json` plan shape has not yet been checked against a
+saved Azure plan JSON file.
+
 """
 
 from __future__ import annotations
@@ -152,10 +150,10 @@ def normalize_plan(plan_json: dict[str, Any], subscription_id: str, region: str)
 def _from_observed_storage_account(properties: dict[str, Any]) -> dict[str, Any]:
     network_rules = properties.get("networkAcls", {}) or {}
     encryption = properties.get("encryption", {}) or {}
-    key_vault_props = encryption.get("keyVaultProperties", {}) or {}
+    key_vault_props = encryption.get("keyvaultproperties", {}) or {}
     return {
         "public_network_access_enabled": properties.get("publicNetworkAccess", "Enabled") == "Enabled",
-        "encryption_key_ref": key_vault_props.get("keyVaultUri"),
+        "encryption_key_ref": key_vault_props.get("currentVersionedKeyIdentifier"),
     }
 
 

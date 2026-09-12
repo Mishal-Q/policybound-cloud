@@ -40,23 +40,10 @@ resource "azurerm_key_vault" "this" {
   purge_protection_enabled   = var.purge_protection_enabled
   soft_delete_retention_days = 7
 
-  # purge_protection_enabled defaults to false (see variables.tf) because
-  # this module backs the disposable student-demo environment: that
-  # environment's provider block enables purge_soft_delete_on_destroy
-  # and recover_soft_deleted_key_vaults, and the deployer access policy
-  # below is granted Purge specifically so `terraform destroy` can fully
-  # clean up a soft-deleted vault/key rather than leaving an orphaned
-  # soft-deleted resource blocking a future recreate with the same name.
-  # Azure Key Vault purge protection, when enabled, blocks exactly that
-  # early-purge action during the retention window -- so
-  # purge_protection_enabled = true would directly conflict with the
-  # cleanup behavior this disposable environment needs. A PRODUCTION
-  # Key Vault should normally set purge_protection_enabled = true (that
-  # is the recommended, safer default for anything holding real secrets
-  # or keys long-term); this module makes it a variable, defaulting to
-  # false, specifically so student-demo gets working cleanup without
-  # silently weakening what a production caller of this same module
-  # would get if they explicitly passed purge_protection_enabled = true.
+  # Azure Storage customer-managed keys require the backing Key Vault to have
+  # both soft delete and purge protection enabled. The student-demo therefore
+  # keeps purge protection on even though that means a deleted vault cannot be
+  # purged immediately during the retention window.
 
   tags = var.tags
 }
@@ -75,19 +62,10 @@ resource "azurerm_key_vault" "this" {
 #   - Get, List:  read the key / confirm current state
 #   - Create, Update: create the key and change its attributes
 #   - Delete: allow `terraform destroy` / key replacement
-#   - Recover, Purge: required for clean destroy/recreate lifecycle
-#     given this environment's provider features
-#     (recover_soft_deleted_key_vaults / purge_soft_delete_on_destroy,
-#     both true) -- without these, a destroy-and-recreate of this key
-#     would get stuck on a soft-deleted key Terraform can't recover or
-#     purge. Purge protection is OFF by default for this module (see
-#     purge_protection_enabled in variables.tf) precisely so Purge
-#     actually works during the demo's soft-delete retention window --
-#     if a caller sets purge_protection_enabled = true for a production
-#     use of this module, the Purge grant here becomes inert (Azure
-#     blocks early purge regardless of RBAC/access-policy permissions
-#     once purge protection is on) rather than harmful, so it's kept
-#     unconditional rather than wired to the same variable.
+#   - Recover, Purge: included for key lifecycle operations; early purge is blocked while purge protection is enabled
+#     The demo provider can recover a soft-deleted vault if needed, but does not
+#     try to purge it during destroy because purge protection prevents early purge.
+#     Purge permission is still kept as part of the key lifecycle permissions.
 #   - GetRotationPolicy: azurerm reads this attribute on every plan/
 #     refresh of an azurerm_key_vault_key resource even when rotation
 #     isn't configured.

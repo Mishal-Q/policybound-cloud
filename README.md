@@ -46,13 +46,13 @@ The GitHub Actions workflow is credential-free for validation. It does not requi
 
 The AWS implementation is used as the broader infrastructure and governance model, but a real AWS deployment is not required to reproduce the project tests.
 
-The Azure `student-demo` environment is the real-cloud validation target. Its Terraform configuration has been validated locally, but it has not yet been applied to a live Azure subscription.
+The Azure `student-demo` environment was deployed to a live Azure subscription and then destroyed after validation. The live run verified the Storage Account security settings, data-tier NSG rule, resource tags, resource-group-scoped RBAC assignment, Resource Graph normalization, and OPA evaluation against observed Azure state.
 
-Real Azure deployment will be done separately using a constrained student subscription. The goal is to collect evidence of actual deployment and policy behavior, then destroy the resources after testing.
+The live Azure validation was performed using a constrained student subscription. The environment was destroyed after testing, with the resource group removed and Terraform state left empty. The protected Key Vault was left in Azure soft-deleted state after teardown as expected.
 
 ## Limitations
 
-Terraform validation does not prove that every resource will deploy successfully in a live cloud environment. Real Azure execution is therefore still required before making claims about successful deployment.
+Local Terraform validation is still kept as a fast check, but the student demo has also completed a real Azure apply and teardown. The live run exposed several issues that local validation could not catch, including Storage provider authentication behavior, the Key Vault purge-protection requirement for customer-managed keys, and a Resource Graph field-shape mismatch in the normalizer.
 
 The repository also does not claim that LocalStack is equivalent to AWS or that credential-free CI proves real cloud behavior.
 

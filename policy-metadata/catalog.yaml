@@ -141,10 +141,10 @@
 
 # --- Azure controls below.
 # Azure policy tests and Terraform configuration have been validated locally.
-# REAL_AZURE_VALIDATION remains unverified until the student-demo environment
-# is deployed and the controls are exercised against observed Azure resources.
-# "Implemented" below therefore refers to the policy/control implementation,
-# not proof of successful live-cloud deployment.
+# The student-demo environment was also exercised against a real Azure
+# subscription. Per-control live-validation status is recorded separately in
+# real_azure_validation.
+# "Implemented" below refers to the policy/control implementation.
 - control_id: CTRL-AZURE-PUBLIC-001
   policy_id: AZURE-PUBLIC-001
   version: "1.0"
@@ -156,7 +156,7 @@
     desired: azure_terraform_plan
     observed: azure_resource_graph
   evaluation_phases: [pre_deployment]
-  real_azure_validation: unverified
+  real_azure_validation: verified
   remediation:
     mode: human_approved_pr
   exception:
@@ -173,7 +173,7 @@
     desired: azure_terraform_plan
     observed: azure_resource_graph
   evaluation_phases: [pre_deployment]
-  real_azure_validation: unverified
+  real_azure_validation: verified
   notes: >
     Structurally the inverse of NET-DB-002: AWS requires an explicit
     opt-in route to reach the internet, so NET-DB-002 checks for the
@@ -199,7 +199,7 @@
     desired: azure_terraform_plan
     observed: azure_resource_graph
   evaluation_phases: [pre_deployment]
-  real_azure_validation: unverified
+  real_azure_validation: verified
   notes: >
     Same governance INTENT as IAM-BOUNDARY-001 (cap privileged access),
     different MECHANISM entirely. Azure has no permission-boundary
@@ -225,7 +225,7 @@
     desired: azure_terraform_plan
     observed: azure_resource_graph
   evaluation_phases: [pre_deployment]
-  real_azure_validation: unverified
+  real_azure_validation: verified
   notes: >
     Uses the cloud-neutral `encryption_key_ref` field (see
     docs/decisions/0009-encryption-key-ref-semantic-field.md), not

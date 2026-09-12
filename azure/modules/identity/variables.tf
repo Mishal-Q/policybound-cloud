@@ -41,7 +41,7 @@ variable "key_vault_name" {
 variable "purge_protection_enabled" {
   type        = bool
   default     = false
-  description = "Whether Key Vault purge protection is enabled. Defaults to false because this module is used by the disposable student-demo environment, which needs to be destroyed and recreated cleanly (purge protection would block the Purge permission already granted to the deployer below during that retention window). Production environments should normally set this to true -- see the comment on azurerm_key_vault.this for the full explanation. This is an explicit variable, not a hardcoded false, specifically so a future production caller of this module isn't stuck with the demo's default."
+  description = "Whether Key Vault purge protection is enabled. The student demo enables it because Azure Storage customer-managed keys require the backing Key Vault to use both soft delete and purge protection."
 }
 
 variable "tags" {

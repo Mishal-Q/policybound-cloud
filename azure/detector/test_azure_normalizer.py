@@ -156,14 +156,14 @@ def test_normalize_observed_storage_account():
         "tags": {"ManagedBy": "sentinel-iac", "owner": "platform-team", "cost-center": "eng-infra"},
         "properties": {
             "publicNetworkAccess": "Disabled",
-            "encryption": {"keyVaultProperties": {"keyVaultUri": "https://kv-sentinel.vault.azure.net/keys/storage-key/"}},
+            "encryption": {"keyvaultproperties": {"currentVersionedKeyIdentifier": "https://kv-sentinel.vault.azure.net/keys/storage-key/abc123"}},
         },
     }
     resource = azure_normalizer.normalize_observed(item)
     assert resource is not None
     attrs = resource["attributes"]
     assert attrs["public_network_access_enabled"] is False
-    assert attrs["encryption_key_ref"] == "https://kv-sentinel.vault.azure.net/keys/storage-key/"
+    assert attrs["encryption_key_ref"] == "https://kv-sentinel.vault.azure.net/keys/storage-key/abc123"
     assert resource["metadata"]["managed_by"] == "sentinel-iac"
 
 

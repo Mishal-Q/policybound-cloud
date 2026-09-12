@@ -184,17 +184,65 @@ names meant the wiring was correct.
 
 ## Live cloud execution status
 
-No live cloud deployment result is recorded yet. Local Terraform, OPA, and Python validation results are documented above, while Azure live deployment remains a separate validation stage.
+The Azure `student-demo` environment was deployed to a real Azure
+subscription, observed through Azure Resource Graph, evaluated through
+the project's canonical normalization and OPA pipeline, and then
+destroyed after validation.
+
+The live run verified the deployed Storage Account security settings,
+data-tier NSG configuration, resource tags, resource-group-scoped RBAC
+assignment, Resource Graph observation and normalization, and evaluation
+of the four Azure OPA policies against observed canonical state.
+
+A deliberate local mutation of the observed canonical Storage Account
+state (`public_network_access_enabled=true`) was also rejected by
+`AZURE-PUBLIC-001`.
+
+The environment was not left running. Terraform reported 17 resources
+destroyed, the Azure resource group no longer existed, and
+`terraform state list` returned no resources. The Key Vault remained in
+Azure's soft-deleted state because purge protection was enabled; this is
+documented rather than treated as a failed teardown.
 
 ## Azure: verified vs. unverified
 
-Everything under "Test suite" and "Bugs this caught" above that says
-"Azure" was actually executed -- real `opa test` and real `pytest` runs,
-both shown with exact pass counts. What was NOT executed, at all,
-anywhere in this project: any `terraform validate`/`plan`/`apply`
-against the `azurerm` provider (no `terraform` binary was available),
-any real Azure API call (no subscription, credentials, or network
-access to Azure existed), and any deployment of any Azure resource. See
-`docs/cross-cloud-governance-model.md`'s "what was actually executed"
-table for the claim-by-claim breakdown, and `azure/README.md` for what
-would need to happen before any of that could change.
+The Azure validation is now split between the parts that were exercised
+against real Azure and the parts that remain outside the experiment.
+
+**Verified against real Azure:**
+
+- The `student-demo` Terraform configuration deployed successfully.
+- The deployed resources were observed through Azure Resource Graph.
+- The observed Resource Graph state was normalized into the project's
+  canonical schema.
+- The live Storage Account customer-managed-key configuration was
+  observed and its Key Vault key identifier was correctly extracted after
+  fixing the Resource Graph field-shape mismatch.
+- The data-tier NSG contained the expected inbound Internet deny rule.
+- The deployed resources carried the expected governance tags.
+- The operator had a Contributor role at resource-group scope.
+- The four Azure OPA policies evaluated the observed canonical state
+  with no findings.
+- A deliberate public-access mutation of the observed canonical state
+  was rejected by `AZURE-PUBLIC-001`.
+- Terraform teardown completed with 17 resources destroyed.
+- The Azure resource group was independently confirmed absent.
+- Terraform state was independently confirmed empty.
+
+**Still not verified:**
+
+- Native Azure Policy enforcement was not tested.
+- External network reachability was not tested.
+- PIM behavior was not tested and remains outside project scope.
+- A separate Microsoft-managed-encryption negative deployment was not
+  performed.
+- Native Azure Policy blocking of disallowed regions was not tested.
+- Native Azure Policy enforcement of required tags was not tested.
+- The Terraform-plan / desired-state normalization path has not been
+  validated against live `terraform show -json` output.
+
+The live experiment therefore strengthens the Azure implementation evidence
+substantially, but it does not turn the project into a claim of complete
+Azure-native security validation. See
+`docs/cross-cloud-governance-model.md` for the claim-by-claim evidence
+boundary and `results/azure-live-validation.md` for the live run record.

@@ -33,7 +33,12 @@ resource "azurerm_storage_account" "data" {
   account_tier             = "Standard"
   account_replication_type = "LRS" # cheapest replication tier -- this is a small demo, not prod-like
 
-  public_network_access_enabled = false
+  public_network_access_enabled    = false
+  allow_nested_items_to_be_public  = false
+  shared_access_key_enabled        = true
+  default_to_oauth_authentication  = true
+  local_user_enabled               = false
+  cross_tenant_replication_enabled = false
 
   identity {
     type = "SystemAssigned"
