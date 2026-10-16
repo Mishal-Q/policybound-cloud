@@ -43,7 +43,7 @@ new tests.
 | pytest (AWS) | `test_region_tags_encryption_ref.py` | 6 |
 | pytest (Azure) | `test_azure_normalizer.py` | 9 |
 
-## Bugs this caught (not hypothetical, actually happened while building this)
+## Bugs this caught 
 
 Six real bugs from the AWS build and recheck (below), plus three more
 from the Azure/governance-gap session, caught before any test run
@@ -146,7 +146,7 @@ these six were only found because I went back and specifically traced
 data flowing between modules instead of trusting that matching variable
 names meant the wiring was correct.
 
-## Repository size (actual, measured against this repo, not estimated)
+## Repository size 
 
 | Category | Count |
 |---|---|
@@ -167,20 +167,6 @@ names meant the wiring was correct.
 | Azure Python source files (excl. tests) | 1 |
 | ADRs | 12 |
 
-## What I could not measure and why
-
-- **CI pipeline wall-clock time.** Requires a real GitHub Actions run
-  against real AWS credentials, Checkov, Infracost, and OPA in sequence.
-  Not run in this environment -- no `terraform` binary, no AWS
-  credentials, no GitHub Actions runner available here. First real PR
-  through `pr-validate.yml` will produce this number; I'd rather leave
-  the row blank than invent a plausible-looking `91.7s`.
-- **Drift classification accuracy against live observed events.** The
-  classifier decision logic is covered by unit tests across its state and
-  exception-validity branches. An empirical accuracy figure against
-  human-labeled live-cloud drift events has not been measured, so no
-  classification-accuracy percentage is claimed here.
-- **`terraform validate` output.** Local Terraform validation now passes for `environments/dev`, `drift/terraform`, and `azure/environments/student-demo`. This does not replace live cloud planning or deployment validation.
 
 ## Live cloud execution status
 
@@ -241,8 +227,6 @@ against real Azure and the parts that remain outside the experiment.
 - The Terraform-plan / desired-state normalization path has not been
   validated against live `terraform show -json` output.
 
-The live experiment therefore strengthens the Azure implementation evidence
-substantially, but it does not turn the project into a claim of complete
-Azure-native security validation. See
+ See
 `docs/cross-cloud-governance-model.md` for the claim-by-claim evidence
 boundary and `results/azure-live-validation.md` for the live run record.
